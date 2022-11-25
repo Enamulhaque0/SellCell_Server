@@ -63,7 +63,21 @@ app.post('/product', async (req, res) => {
 });
 
 
+app.get("/category/:id", async (req, res) => {
+  
+        
+  
+  let query = {};
 
+  if (req.params.id)
+    query = {
+      categoryId: req.params.id,
+    };
+
+  const cursor = productsCollection.find(query);
+  const result = await cursor.toArray();
+  res.send(result);
+});
 
 
 
