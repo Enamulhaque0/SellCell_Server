@@ -35,8 +35,14 @@ const usersCollection = client.db('SellCell').collection('users');
 app.post('/users', async (req, res) => {
   const userInfo = req.body;
   
+  const user= await usersCollection.findOne(userInfo)
+  if(user){
+
+    return res.send({message:`welcome ${userInfo?.name}`})
+  } 
+  
   const result = await usersCollection.insertOne(userInfo);
-  res.send(result);
+  return res.send(result);
 });
 
 
