@@ -31,6 +31,8 @@ async function run() {
 const usersCollection = client.db('SellCell').collection('users');
 const Categories= client.db('SellCell').collection('Categories');
 const productsCollection= client.db('SellCell').collection('Products');
+const bookingCollection= client.db('SellCell').collection('Booking');
+
 
 // users API
 app.post('/users', async (req, res) => {
@@ -62,7 +64,7 @@ app.post('/product', async (req, res) => {
   return res.send(result);
 });
 
-
+//  category get
 app.get("/category/:id", async (req, res) => {
   
         
@@ -79,7 +81,23 @@ app.get("/category/:id", async (req, res) => {
   res.send(result);
 });
 
+// Booking
 
+app.post('/booking', async (req, res) => {
+  const product = req.body;
+  
+  const result = await bookingCollection.insertOne(product);
+  return res.send(result);
+});
+
+app.get('/orders', async (req, res) => {
+  const email = req.query.email;
+  
+
+  const query = { email: email };
+  const bookings = await bookingCollection.find(query).toArray();
+  res.send(bookings);
+});
 
 
 
