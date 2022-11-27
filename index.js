@@ -32,6 +32,7 @@ const usersCollection = client.db('SellCell').collection('users');
 const Categories= client.db('SellCell').collection('Categories');
 const productsCollection= client.db('SellCell').collection('Products');
 const bookingCollection= client.db('SellCell').collection('Booking');
+const advertiseCollection= client.db('SellCell').collection('advertise');
 
 
 // users API
@@ -96,6 +97,8 @@ app.post('/product', async (req, res) => {
   return res.send(result);
 });
 
+
+
 app.get('/products', async (req, res) => {
   const email = req.query.email;
   
@@ -107,7 +110,6 @@ app.get('/products', async (req, res) => {
 
 app.delete('/product/:id',  async (req, res) => {
   const id = req.params.id;
-  console.log(id)
   const filter = { _id: ObjectId(id) };
   const result = await productsCollection.deleteOne(filter);
   res.send(result);
@@ -150,7 +152,29 @@ app.get('/orders', async (req, res) => {
   res.send(bookings);
 });
 
+// advertise
+app.post('/advertise', async (req, res) => {
+  const product = req.body;
+  const existingProduct= await advertiseCollection.findOne(product)
+  
+  if(existingProduct){
 
+    return res.send({
+      error: false,
+      message:` ${product?.title} already in advertisement`
+    
+    })
+  } 
+  
+  
+  const result = await advertiseCollection.insertOne(product);
+  return res.send(result);
+});
+app.get('/advertise', async (req, res) => {
+  const query = {};
+  const users = await advertiseCollection.find(query).toArray();
+  res.send(users);
+})
 
 
 
