@@ -1,254 +1,205 @@
-const express = require('express')
-const cors = require('cors')
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+require("dotenv").config();
 
-const port = process.env.PORT || 5000
-const app = express()
+const port = process.env.PORT || 5000;
+const app = express();
 
 // middleware
 
-app.use(cors())
-app.use(express.json())
-
-
-
-
-
-
-
-
-
-
+app.use(cors());
+app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vbwpfni.mongodb.net/?retryWrites=true&w=majority`;
-const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
-
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverApi: ServerApiVersion.v1,
+});
 
 async function run() {
- try {
+  try {
+    const usersCollection = client.db("SellCell").collection("users");
+    const Categories = client.db("SellCell").collection("Categories");
+    const productsCollection = client.db("SellCell").collection("Products");
+    const bookingCollection = client.db("SellCell").collection("Booking");
+    const advertiseCollection = client.db("SellCell").collection("advertise");
 
-const usersCollection = client.db('SellCell').collection('users');
-const Categories= client.db('SellCell').collection('Categories');
-const productsCollection= client.db('SellCell').collection('Products');
-const bookingCollection= client.db('SellCell').collection('Booking');
-const advertiseCollection= client.db('SellCell').collection('advertise');
+    // users API
+    app.post("/users", async (req, res) => {
+      const userInfo = req.body;
 
+      const user = await usersCollection.findOne(userInfo);
+      if (user) {
+        return res.send({ message: `welcome ${userInfo?.name}` });
+      }
 
-// users API
-app.post('/users', async (req, res) => {
-  const userInfo = req.body;
-  
-  const user= await usersCollection.findOne(userInfo)
-  if(user){
+      const result = await usersCollection.insertOne(userInfo);
+      return res.send(result);
+    });
 
-    return res.send({message:`welcome ${userInfo?.name}`})
-  } 
-  
-  const result = await usersCollection.insertOne(userInfo);
-  return res.send(result);
-});
+    // verifySeller
 
-// Admin
-app.get('/users/admin/:email', async (req, res) => {
-  const email = req.params.email;
-  const query = { email }
-  const user = await usersCollection.findOne(query);
-  res.send({ isAdmin: user?.role === 'admin' });
-})
-// seller
-app.get('/users/seller/:email', async (req, res) => {
-  const email = req.params.email;
-  const query = { email }
- 
-  const user = await usersCollection.findOne(query);
-  console.log(user);
-  res.send({ isSeller: user?.role === 'seller' });
-})
-// buyer
-app.get('/users/buyer/:email', async (req, res) => {
-  const email = req.params.email;
-  const query = { email }
- 
-  const user = await usersCollection.findOne(query);
-  console.log(user);
-  res.send({ isBuyer: user?.role === 'buyer' });
-})
+    app.put("/seller/verify/:id", async (req, res) => {
+      const  id  = req.params.id;
+      console.log(id);
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          verified: true,
+        },
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
 
-// buyer
-app.get('/buyers', async (req, res) => {
-  const buyer = req.query.buyer
-  
-  const query = {role : buyer}
-  const buyers = await usersCollection.find(query).toArray()
-  res.send(buyers);
-})
-app.delete('/buyer/:id',  async (req, res) => {
-  const id = req.params.id;
-  const filter = { _id: ObjectId(id) };
-  const result = await usersCollection.deleteOne(filter);
-  res.send(result);
-})
+    // Admin
+    app.get("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isAdmin: user?.role === "admin" });
+    });
+    // seller
+    app.get("/users/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
 
+      const user = await usersCollection.findOne(query);
+      res.send({ isSeller: user?.role === "seller" });
+    });
+    // buyer
+    app.get("/users/buyer/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
 
-app.get('/sellers', async (req, res) => {
-  const seller = req.query.seller
-  
-  const query = {role : seller}
-  const sellers = await usersCollection.find(query).toArray()
-  res.send(sellers);
-})
-app.delete('/seller/:id',  async (req, res) => {
-  const id = req.params.id;
-  console.log(id)
-  const filter = { _id: ObjectId(id) };
-  const result = await usersCollection.deleteOne(filter);
-  res.send(result);
-})
+      const user = await usersCollection.findOne(query);
+      res.send({ isBuyer: user?.role === "buyer" });
+    });
 
+    // buyer
+    app.get("/buyers", async (req, res) => {
+      const buyer = req.query.buyer;
 
-// usersGet
-app.get('/category', async (req, res) => {
-  const query = {};
-  const users = await Categories.find(query).toArray();
-  res.send(users);
-})
+      const query = { role: buyer };
+      const buyers = await usersCollection.find(query).toArray();
+      res.send(buyers);
+    });
+    app.delete("/buyer/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(filter);
+      res.send(result);
+    });
 
+    app.get("/sellers", async (req, res) => {
+      const seller = req.query.seller;
 
+      const query = { role: seller };
+      const sellers = await usersCollection.find(query).toArray();
+      res.send(sellers);
+    });
+    app.delete("/seller/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(filter);
+      res.send(result);
+    });
 
-app.post('/product', async (req, res) => {
-  const product = req.body;
-  
-  const result = await productsCollection.insertOne(product);
-  return res.send(result);
-});
+    // usersGet
+    app.get("/category", async (req, res) => {
+      const query = {};
+      const users = await Categories.find(query).toArray();
+      res.send(users);
+    });
 
+    app.post("/product", async (req, res) => {
+      const product = req.body;
 
+      const result = await productsCollection.insertOne(product);
+      return res.send(result);
+    });
 
-app.get('/products', async (req, res) => {
-  const email = req.query.email;
-  
+    app.get("/products", async (req, res) => {
+      const email = req.query.email;
 
-  const query = { email: email };
-  const products = await productsCollection.find(query).toArray();
-  res.send(products);
-});
+      const query = { email: email };
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
+    });
 
-app.delete('/product/:id',  async (req, res) => {
-  const id = req.params.id;
-  const filter = { _id: ObjectId(id) };
-  const result = await productsCollection.deleteOne(filter);
-  res.send(result);
-})
+    app.delete("/product/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(filter);
+      res.send(result);
+    });
 
+    //  category get
+    app.get("/category/:id", async (req, res) => {
+      let query = {};
 
+      if (req.params.id)
+        query = {
+          categoryId: req.params.id,
+        };
 
-//  category get
-app.get("/category/:id", async (req, res) => {
-  
-        
-  
-  let query = {};
+      const cursor = productsCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
-  if (req.params.id)
-    query = {
-      categoryId: req.params.id,
-    };
+    // Booking
 
-  const cursor = productsCollection.find(query);
-  const result = await cursor.toArray();
-  res.send(result);
-});
+    app.post("/booking", async (req, res) => {
+      const product = req.body;
 
-// Booking
+      const result = await bookingCollection.insertOne(product);
+      return res.send(result);
+    });
 
-app.post('/booking', async (req, res) => {
-  const product = req.body;
-  
-  const result = await bookingCollection.insertOne(product);
-  return res.send(result);
-});
+    app.get("/orders", async (req, res) => {
+      const email = req.query.email;
 
-app.get('/orders', async (req, res) => {
-  const email = req.query.email;
-  
+      const query = { email: email };
+      const bookings = await bookingCollection.find(query).toArray();
+      res.send(bookings);
+    });
 
-  const query = { email: email };
-  const bookings = await bookingCollection.find(query).toArray();
-  res.send(bookings);
-});
+    // advertise
+    app.post("/advertise", async (req, res) => {
+      const product = req.body;
+      const existingProduct = await advertiseCollection.findOne(product);
 
-// advertise
-app.post('/advertise', async (req, res) => {
-  const product = req.body;
-  const existingProduct= await advertiseCollection.findOne(product)
-  
-  if(existingProduct){
+      if (existingProduct) {
+        return res.send({
+          error: false,
+          message: ` ${product?.title} already in advertisement`,
+        });
+      }
 
-    return res.send({
-      error: false,
-      message:` ${product?.title} already in advertisement`
-    
-    })
-  } 
-  
-  
-  const result = await advertiseCollection.insertOne(product);
-  return res.send(result);
-});
-app.get('/advertise', async (req, res) => {
-  const query = {};
-  const users = await advertiseCollection.find(query).toArray();
-  res.send(users);
-})
-
-
-
-
-
-
-
-
-  
- } 
- 
- 
- finally {
-
+      const result = await advertiseCollection.insertOne(product);
+      return res.send(result);
+    });
+    app.get("/advertise", async (req, res) => {
+      const query = {};
+      const users = await advertiseCollection.find(query).toArray();
+      res.send(users);
+    });
+  } finally {
+  }
 }
 
+run();
 
+app.get("/", async (req, res) => {
+  res.send("sell_cell running..");
+});
 
-
-
-
-
-
-
-}
-
-
-run()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-app.get("/", async(req,res)=>{
-
-    res.send("sell_cell running..")
-})
-
-app.listen(port, ()=>console.log(`Sell_Cell Running On ${port}`))
+app.listen(port, () => console.log(`Sell_Cell Running On ${port}`));
